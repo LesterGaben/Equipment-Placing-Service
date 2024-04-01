@@ -1,6 +1,7 @@
 ﻿using Equipment_Placing_Service.BLL.DTOs;
 using Equipment_Placing_Service.BLL.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace EquipmentPlacingService.Console {
     public class EquipmentPlacementContractMenu(IServiceProvider serviceProvider) {
@@ -21,6 +22,8 @@ namespace EquipmentPlacingService.Console {
                 System.Console.Write("\r\nSelect an option: ");
 
                 switch (System.Console.ReadLine()) {
+
+
                     case "1":
                         ListAllContracts(contractService).Wait();
                         break;
@@ -28,7 +31,15 @@ namespace EquipmentPlacingService.Console {
                         GetContractById(contractService).Wait();
                         break;
                     case "3":
-                        CreateContract(contractService, manufacturingSpaceService).Wait();
+                        try {
+                            CreateContract(contractService, manufacturingSpaceService).Wait();
+                        }
+                        catch (Exception error) {
+                            if (error.Message.Contains("Insufficient space for the equipment."))
+                                System.Console.WriteLine("Insufficient space for the equipment.");
+                            else 
+                                System.Console.WriteLine(error.Message);
+                        }
                         break;
                     case "4":
                         DeleteContractById(contractService).Wait();

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Equipment_Placing_Service.BLL.DTOs;
+using Equipment_Placing_Service.BLL.Exceptions;
 using Equipment_Placing_Service.BLL.Services.Interfaces;
 using Equipment_Placing_Service.DAL.Entities;
 using Equipment_Placing_Service.DAL.Repositories.Interfaces;
@@ -23,16 +24,17 @@ namespace Equipment_Placing_Service.BLL.Services {
         }
 
         public async Task CreateAsync(CreateEquipmentPlacementContractDto dto) {
+            if(dto.Quantity < 0) {
+                throw new ArgumentException("Quantity can't be less than 0");
+            }
             var space = await _spaceRepository.GetByCodeAsync(dto.ManufacturingSpaceCode);
             var type = await _typeRepository.GetByCodeAsync(dto.EquipmentTypeCode);
 
             if (space == null || type == null) {
-                throw new Exception("Manufacturing space or equipment type not found.");
+                throw new ArgumentException("Manufacturing space or equipment type not found.");
             }
 
-            if (space.EquipmentArea < type.Area * dto.Quantity) {
-                throw new Exception("Insufficient space for the equipment.");
-            }
+            EnsureSufficientSpaceAvailable(space, type, dto.Quantity).Wait();
 
             var contract = new EquipmentPlacementContract {
                 ManufacturingSpaceId = space.Id,
@@ -41,6 +43,24 @@ namespace Equipment_Placing_Service.BLL.Services {
             };
 
             await _contractRepository.AddAsync(contract);
+        }
+
+        private async Task EnsureSufficientSpaceAvailable(ManufacturingSpace space, EquipmentType type, int quantity) {
+            
+            if (quantity == 0 || type.Area == 0) {
+                return;
+            }
+
+            double occupiedArea = await _contractRepository
+                .FindBySpaceIdAsync(space.Id)
+                .ContinueWith(task => task.Result.Sum(c => c.Quantity * c.EquipmentType.Area));
+
+            double requiredArea = type.Area * quantity;
+            double availableArea = space.EquipmentArea - occupiedArea;
+
+            if (availableArea < requiredArea) {
+                throw new SpaceInsufficientException("Insufficient space for the equipment.");
+            }
         }
 
         public async Task<List<EquipmentPlacementContractDto>> GetAllAsync() {

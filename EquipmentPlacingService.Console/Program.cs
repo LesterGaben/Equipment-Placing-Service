@@ -63,6 +63,7 @@ namespace EquipmentPlacingService.Console {
                 case "4":
                     return false;
                 default:
+                    System.Console.WriteLine();
                     return true;
             }
         }

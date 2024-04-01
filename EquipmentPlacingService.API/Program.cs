@@ -5,6 +5,8 @@ using Equipment_Placing_Service.DAL.Repositories.Interfaces;
 using Equipment_Placing_Service.DAL.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Equipment_Placing_Service.BLL.MappingProfiles;
+using Microsoft.AspNetCore.Diagnostics;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,5 +46,33 @@ if (app.Environment.IsDevelopment()) {
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
+app.UseExceptionHandler(appError => {
+    appError.Run(async context => {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        context.Response.ContentType = "application/json";
+
+        var contextFeature = context.Features.Get<IExceptionHandlerFeature>();
+        if (contextFeature != null) {
+            var error = contextFeature.Error;
+
+            if (error.Message.Contains("Insufficient space for the equipment.")) {
+                
+                var response = JsonSerializer.Serialize(new {
+                    StatusCode = context.Response.StatusCode,
+                    Message = "Insufficient space for the equipment."
+                });
+                await context.Response.WriteAsync(response);
+            }
+            else {
+                var response = JsonSerializer.Serialize(new {
+                    StatusCode = context.Response.StatusCode,
+                    Message = error.Message
+                });
+                await context.Response.WriteAsync(response);
+            }
+        }
+    });
+});
 
 app.Run();

@@ -8,5 +8,6 @@ namespace Equipment_Placing_Service.DAL.Repositories.Interfaces {
         public Task UpdateAsync(EquipmentPlacementContract equipmentPlacementContract);
         public Task DeleteAsync(EquipmentPlacementContract equipmentPlacementContract);
         public Task DeleteAllAsync();
+        public Task<List<EquipmentPlacementContract>> FindBySpaceIdAsync(int id);
     }
 }

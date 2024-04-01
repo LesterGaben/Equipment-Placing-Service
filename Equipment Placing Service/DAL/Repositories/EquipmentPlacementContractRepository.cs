@@ -53,5 +53,13 @@ namespace Equipment_Placing_Service.DAL.Repositories {
         public async Task<List<EquipmentPlacementContract>> GetAllAsync() {
             return await _equipmentPlacementContracts.ToListAsync();
         }
+
+        public async Task<List<EquipmentPlacementContract>> FindBySpaceIdAsync(int id) {
+            return await _equipmentPlacementContracts
+                         .Include(c => c.EquipmentType)
+                         .Where(c => c.ManufacturingSpaceId == id)
+                         .ToListAsync();
+        }
+
     }
 }
